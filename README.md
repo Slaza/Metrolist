@@ -21,3 +21,7 @@ This project is a fork of [Metrolist](https://github.com/MetrolistGroup/Metrolis
 
 ### **Bug Fixes & Library Sync**
 * **Playlist Sync:** Resolved an issue where long playlists would truncate or omit songs during library synchronization.
+
+
+
+forgot to remove my test Home Page, just ignore it.
