@@ -1684,6 +1684,48 @@ object YouTube {
                 .orEmpty()
         }
 
+    suspend fun mixedForYou(): Result<List<PlaylistItem>> =
+        runCatching {
+            val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_mixed_for_you").body<BrowseResponse>()
+            response.contents
+                ?.singleColumnBrowseResultsRenderer
+                ?.tabs
+                ?.firstOrNull()
+                ?.tabRenderer
+                ?.content
+                ?.sectionListRenderer
+                ?.contents
+                ?.firstOrNull()
+                ?.gridRenderer
+                ?.items
+                ?.mapNotNull { it.musicTwoRowItemRenderer }
+                ?.mapNotNull { renderer ->
+                    if (renderer.isPlaylist) {
+                        PlaylistItem(
+                            id = renderer.navigationEndpoint.browseEndpoint?.browseId?.removePrefix("VL") ?: return@mapNotNull null,
+                            title = renderer.title.runs?.firstOrNull()?.text ?: return@mapNotNull null,
+                            author = Artist(
+                                name = renderer.subtitle?.runs?.firstOrNull()?.text ?: "",
+                                id = null
+                            ),
+                            songCountText = null,
+                            thumbnail = renderer.thumbnailRenderer.getThumbnailUrl() ?: "",
+                            playEndpoint = renderer.thumbnailOverlay
+                                ?.musicItemThumbnailOverlayRenderer?.content
+                                ?.musicPlayButtonRenderer?.playNavigationEndpoint
+                                ?.watchPlaylistEndpoint ?: return@mapNotNull null,
+                            shuffleEndpoint = renderer.menu?.menuRenderer?.items?.find {
+                                it.menuNavigationItemRenderer?.icon?.iconType == "MUSIC_SHUFFLE"
+                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
+                            radioEndpoint = renderer.menu?.menuRenderer?.items?.find {
+                                it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
+                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint
+                        )
+                    } else null
+                }
+                .orEmpty()
+        }
+
     suspend fun moodAndGenres(): Result<List<MoodAndGenres>> =
         runCatching {
             val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_moods_and_genres").body<BrowseResponse>()

@@ -110,7 +110,7 @@ constructor(
                 val (filter, sortType, descending) = filterSort
                 when (filter) {
                     SongFilter.LIBRARY -> database.songs(sortType, descending).map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
-                    SongFilter.LIKED -> database.likedSongs(sortType, descending).map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
+                    SongFilter.LIKED -> database.likedSongs(sortType, descending).map { it.filterExplicit(hideExplicit) }
                     SongFilter.DOWNLOADED -> database.downloadedSongs(sortType, descending).map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
                     SongFilter.UPLOADED -> database.uploadedSongs(sortType, descending).map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
                 }
@@ -394,9 +394,10 @@ constructor(
         .flatMapLatest { (hideExplicit, hideVideoSongs, _) ->
             combine(
                 database.songs(SongSortType.CREATE_DATE, true),
+                database.likedSongs(SongSortType.CREATE_DATE, true),
                 database.songsInBookmarkedPlaylists()
-            ) { librarySongs, playlistSongs ->
-                (librarySongs + playlistSongs)
+            ) { librarySongs, likedSongs, playlistSongs ->
+                (librarySongs + likedSongs + playlistSongs)
                     .distinctBy { it.id }
                     .filterExplicit(hideExplicit)
                     .filterVideoSongs(hideVideoSongs)

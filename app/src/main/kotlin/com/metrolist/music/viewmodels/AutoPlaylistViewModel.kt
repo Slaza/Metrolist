@@ -64,7 +64,7 @@ constructor(
                 val (sortType, descending) = sortDesc
                 when (playlist) {
                     "liked" -> database.likedSongs(sortType, descending)
-                        .map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
+                        .map { it.filterExplicit(hideExplicit) }
 
                     "downloaded" -> database.downloadedSongs(sortType, descending)
                         .map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }

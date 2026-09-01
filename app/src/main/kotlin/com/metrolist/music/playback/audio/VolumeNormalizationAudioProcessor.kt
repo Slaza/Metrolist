@@ -28,6 +28,7 @@ class VolumeNormalizationAudioProcessor : AudioProcessor {
         }
 
     private var outputBuffer: ByteBuffer = EMPTY_BUFFER
+    private var reusableOutputBuffer: ByteBuffer = EMPTY_BUFFER
     private var inputEnded = false
 
     private data class GainState(val targetGainMb: Int, val linearGain: Double)
@@ -76,6 +77,14 @@ class VolumeNormalizationAudioProcessor : AudioProcessor {
 
         val inputSize = inputBuffer.remaining()
         if (inputSize == 0) return
+
+        // Keep the processor in the chain so normalization can be toggled during playback.
+        // When no gain is applied, avoid copying every PCM buffer into direct memory.
+        if (!applyGain) {
+            outputBuffer = inputBuffer.slice().order(inputBuffer.order())
+            inputBuffer.position(inputBuffer.limit())
+            return
+        }
 
         val sampleCount = inputSize / bytesPerSample
         val out = replaceOutputBuffer(sampleCount * bytesPerSample)
@@ -182,11 +191,12 @@ class VolumeNormalizationAudioProcessor : AudioProcessor {
     }
 
     private fun replaceOutputBuffer(size: Int): ByteBuffer {
-        if (outputBuffer.capacity() < size) {
-            outputBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        if (reusableOutputBuffer.capacity() < size) {
+            reusableOutputBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
         } else {
-            outputBuffer.clear()
+            reusableOutputBuffer.clear()
         }
+        outputBuffer = reusableOutputBuffer
         return outputBuffer
     }
 

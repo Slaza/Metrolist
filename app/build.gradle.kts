@@ -94,6 +94,7 @@ abstract class GenerateProtoTask : DefaultTask() {
 }
 
 android {
+    base.archivesName.set("Metrolist")
     namespace = "com.metrolist.music"
     compileSdk = 37
 
@@ -101,8 +102,8 @@ android {
         applicationId = applicationIdOverride ?: baseApplicationId
         minSdk = 26
         targetSdk = 36
-        versionCode = 152
-        versionName = "13.6.3"
+        versionCode = 154
+        versionName = "12.6.3-c"
         resValue("string", "app_name", appNameOverride ?: "Metrolist")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -191,7 +192,7 @@ android {
             }
             isDebuggable = true
             if (appNameOverride == null) {
-                resValue("string", "app_name", "Metrolist Debug")
+                resValue("string", "app_name", "Metrolist")
             }
             signingConfig =
                 if (workflowDebugKeystoreFile != null) {

@@ -62,34 +62,59 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.roundToInt
 
 enum class AndroidAutoSection(val id: String) {
+    DISCOVER("discover"),
+    NEW_RELEASES("new_releases"),
     LIKED("liked"),
     SONGS("songs"),
     ARTISTS("artists"),
     ALBUMS("albums"),
     PLAYLISTS("playlists"),
+    MIXES("mixes"),
 }
 
 @Composable
 fun AndroidAutoSection.label(): String = when (this) {
+    AndroidAutoSection.DISCOVER -> stringResource(R.string.discover)
+    AndroidAutoSection.NEW_RELEASES -> stringResource(R.string.new_releases)
     AndroidAutoSection.LIKED -> stringResource(R.string.liked_songs)
     AndroidAutoSection.SONGS -> stringResource(R.string.songs)
     AndroidAutoSection.ARTISTS -> stringResource(R.string.artists)
     AndroidAutoSection.ALBUMS -> stringResource(R.string.albums)
     AndroidAutoSection.PLAYLISTS -> stringResource(R.string.playlists)
+    AndroidAutoSection.MIXES -> stringResource(R.string.mixes)
 }
 
 fun serializeSections(sections: List<Pair<AndroidAutoSection, Boolean>>): String =
     sections.joinToString(",") { (section, enabled) -> "${section.id}:$enabled" }
 
 fun deserializeSections(raw: String): List<Pair<AndroidAutoSection, Boolean>> {
-    if (raw.isBlank()) return AndroidAutoSection.values().map { it to true }
-    return raw.split(",").mapNotNull { token ->
+    val defaultSections = listOf(
+        AndroidAutoSection.LIKED to true,
+        AndroidAutoSection.DISCOVER to true,
+        AndroidAutoSection.NEW_RELEASES to true,
+        AndroidAutoSection.SONGS to true,
+        AndroidAutoSection.ALBUMS to true,
+        AndroidAutoSection.ARTISTS to true,
+        AndroidAutoSection.PLAYLISTS to true,
+        AndroidAutoSection.MIXES to true
+    )
+    if (raw.isBlank()) return defaultSections
+    val savedSections = raw.split(",").mapNotNull { token ->
         val parts = token.split(":")
         if (parts.size != 2) return@mapNotNull null
         val section = AndroidAutoSection.values().find { it.id == parts[0] } ?: return@mapNotNull null
         val enabled = parts[1].toBooleanStrictOrNull() ?: true
         section to enabled
     }
+    
+    // Merge saved with default to handle new sections added in updates
+    val result = savedSections.toMutableList()
+    defaultSections.forEach { (section, enabled) ->
+        if (result.none { it.first == section }) {
+            result.add(section to enabled)
+        }
+    }
+    return result
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,14 +129,9 @@ fun AndroidAutoSettings(
         database.playlistsByCreateDateAsc().map { list -> list.map { it.playlist } }
     }.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val (youtubePlaylistsEnabled, onYoutubePlaylistsChange) = rememberPreference(
-        key = AndroidAutoYouTubePlaylistsKey,
-        defaultValue = false
-    )
-
     val (sectionsRaw, onSectionsChange) = rememberPreference(
         key = AndroidAutoSectionsOrderKey,
-        defaultValue = serializeSections(AndroidAutoSection.values().map { it to true })
+        defaultValue = serializeSections(deserializeSections(""))
     )
 
     val (targetPlaylist, onTargetPlaylistChange) = rememberPreference(
@@ -184,11 +204,14 @@ fun AndroidAutoSettings(
                             Material3SettingsItem(
                                 icon = painterResource(
                                     when (section) {
+                                        AndroidAutoSection.DISCOVER -> R.drawable.discover_tune
+                                        AndroidAutoSection.NEW_RELEASES -> R.drawable.newspaper
                                         AndroidAutoSection.LIKED -> R.drawable.favorite
                                         AndroidAutoSection.SONGS -> R.drawable.music_note
                                         AndroidAutoSection.ARTISTS -> R.drawable.artist
                                         AndroidAutoSection.ALBUMS -> R.drawable.album
                                         AndroidAutoSection.PLAYLISTS -> R.drawable.queue_music
+                                        AndroidAutoSection.MIXES -> R.drawable.explore_outlined
                                     }
                                 ),
                                 title = { Text(section.label()) },
@@ -293,36 +316,6 @@ fun AndroidAutoSettings(
                     title = { Text(stringResource(R.string.android_auto_target_playlist)) },
                     description = { Text(playlistLabels(targetPlaylist)) },
                     onClick = { showTargetPlaylistDialog = true }
-                )
-            )
-        )
-
-        Spacer(Modifier.height(27.dp))
-
-        // YouTube playlists
-        Material3SettingsGroup(
-            title = stringResource(R.string.mixes),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.queue_music),
-                    title = { Text(stringResource(R.string.android_auto_youtube_playlists)) },
-                    description = { Text(stringResource(R.string.android_auto_youtube_playlists_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = youtubePlaylistsEnabled,
-                            onCheckedChange = onYoutubePlaylistsChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        if (youtubePlaylistsEnabled) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onYoutubePlaylistsChange(!youtubePlaylistsEnabled) }
                 )
             )
         )

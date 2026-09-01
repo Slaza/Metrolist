@@ -26,6 +26,7 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
 
     private var inputBuffer: ByteBuffer = EMPTY_BUFFER
     private var outputBuffer: ByteBuffer = EMPTY_BUFFER
+    private var reusableOutputBuffer: ByteBuffer = EMPTY_BUFFER
     private var inputEnded = false
 
     private var filters: List<BiquadFilter> = emptyList()
@@ -140,18 +141,11 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
 
     override fun queueInput(inputBuffer: ByteBuffer) {
         if (!equalizerEnabled || filters.isEmpty()) {
-            // Passthrough mode - directly use input as output
-            val remaining = inputBuffer.remaining()
-            if (remaining == 0) return
-
-            // Ensure output buffer is large enough
-            if (outputBuffer.capacity() < remaining) {
-                outputBuffer = ByteBuffer.allocateDirect(remaining).order(ByteOrder.nativeOrder())
-            } else {
-                outputBuffer.clear()
-            }
-            outputBuffer.put(inputBuffer)
-            outputBuffer.flip()
+            // Keep the processor in the chain so a profile can be applied during playback, but
+            // do not allocate and copy every PCM buffer while the equalizer is disabled.
+            if (!inputBuffer.hasRemaining()) return
+            outputBuffer = inputBuffer.slice().order(inputBuffer.order())
+            inputBuffer.position(inputBuffer.limit())
             return
         }
 
@@ -160,18 +154,10 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
             return
         }
 
-        // Ensure we have our own output buffer (reuse if possible to avoid allocations)
-        // Note: We MUST NOT use inputBuffer as outputBuffer if we modify it
-        if (outputBuffer === EMPTY_BUFFER || outputBuffer === inputBuffer) {
-            // Need new buffer - was empty or same as input
-            outputBuffer = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
-        } else if (outputBuffer.capacity() < inputSize) {
-            // Need larger buffer
-            outputBuffer = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
-        } else {
-            // Reuse existing buffer (most common path)
-            outputBuffer.clear()
-        }
+        // Keep a reusable direct buffer separate from outputBuffer. getOutput() must clear the
+        // latter to follow the AudioProcessor contract, so reusing outputBuffer itself would
+        // still allocate a fresh direct buffer for every decoded audio chunk.
+        outputBuffer = replaceOutputBuffer(inputSize)
 
         // Process audio samples
         when (encoding) {
@@ -288,5 +274,14 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
 
     override fun queueEndOfStream() {
         inputEnded = true
+    }
+
+    private fun replaceOutputBuffer(size: Int): ByteBuffer {
+        if (reusableOutputBuffer.capacity() < size) {
+            reusableOutputBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        } else {
+            reusableOutputBuffer.clear()
+        }
+        return reusableOutputBuffer
     }
 }

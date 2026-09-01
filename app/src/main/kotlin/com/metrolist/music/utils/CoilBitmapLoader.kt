@@ -64,6 +64,7 @@ class CoilBitmapLoader(
                     ImageRequest
                         .Builder(context)
                         .data(uri)
+                        .size(512, 512)
                         .allowHardware(false)
                         .build()
 
@@ -75,6 +76,9 @@ class CoilBitmapLoader(
                     is SuccessResult -> {
                         try {
                             val bitmap = result.image.toBitmap()
+                            // Coil returns a bitmap that might be reused if not careful, 
+                            // but usually toBitmap() for a resized image is safe.
+                            // We still create a copy to be absolutely sure it's independent for MediaSession.
                             bitmap.createIndependentCopy()
                         } catch (e: Exception) {
                             Timber.tag("CoilBitmapLoader").w(e, "Failed to convert image to bitmap")

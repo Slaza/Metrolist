@@ -294,7 +294,10 @@ class HomeViewModel @Inject constructor(
         val likedSongs = database.likedSongsByCreateDateAsc().first()
         if (likedSongs.isEmpty()) return
 
-        val seeds = likedSongs.shuffled().distinctBy { it.id }.take(5)
+        // Use a daily stable seed to pick the 5 songs to generate recommendations from.
+        // This ensures the list stays consistent throughout the day.
+        val today = LocalDate.now().toEpochDay()
+        val seeds = likedSongs.shuffled(Random(today)).take(5)
         
         // Use a synchronized list to collect results safely from concurrent coroutines
         val items = java.util.Collections.synchronizedList(mutableListOf<DailyDiscoverItem>())
@@ -311,7 +314,7 @@ class HomeViewModel @Inject constructor(
                                     if (item.explicit) return@filter false
                                     true
                                 }
-                                .shuffled()
+                                .shuffled(Random(today + seed.id.hashCode())) // Stable shuffle per song
 
                             // Simple check to avoid immediate duplicate of seed
                             val recommendation = recommendations.firstOrNull { rec ->
@@ -333,8 +336,12 @@ class HomeViewModel @Inject constructor(
             }.forEach { it.join() }
         }
         
-        // Final deduplication just in case multiple seeds recommended the same song
-        dailyDiscover.value = items.toList().distinctBy { it.recommendation.id }.shuffled()
+        // Final sort to keep the order based on the seeds
+        val sortedItems = items.toList().sortedBy { item -> 
+            seeds.indexOfFirst { it.id == item.seed.id }
+        }
+        
+        dailyDiscover.value = sortedItems.distinctBy { it.recommendation.id }
     }
 
     private suspend fun getQuickPicks() {

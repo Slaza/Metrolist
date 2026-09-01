@@ -38,6 +38,7 @@ import com.metrolist.music.db.entities.FormatEntity
 import com.metrolist.music.db.entities.LyricsEntity
 import com.metrolist.music.db.entities.PlayCountEntity
 import com.metrolist.music.db.entities.Playlist
+import com.metrolist.music.extensions.reversed
 import com.metrolist.music.db.entities.PlaylistEntity
 import com.metrolist.music.db.entities.PlaylistSong
 import com.metrolist.music.db.entities.PlaylistSongMap
@@ -140,36 +141,37 @@ interface DatabaseDao {
     fun songs(
         sortType: SongSortType,
         descending: Boolean,
-    ) = when (sortType) {
-        SongSortType.CREATE_DATE -> songsByCreateDateAsc()
-        SongSortType.NAME ->
-            songsByNameAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs.sortedWith(compareBy(collator) { it.song.title })
-            }
+    ): Flow<List<Song>> =
+        when (sortType) {
+            SongSortType.CREATE_DATE -> songsByCreateDateAsc()
+            SongSortType.NAME ->
+                songsByNameAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs.sortedWith(compareBy(collator) { it.song.title })
+                }
 
-        SongSortType.ARTIST ->
-            songsByRowIdAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs
-                    .sortedWith(
-                        compareBy(collator) { song ->
-                            song.orderedArtists.joinToString("") { it.name }
-                        },
-                    ).groupBy { it.album?.title }
-                    .flatMap { (_, songsByAlbum) ->
-                        songsByAlbum.sortedBy { album ->
-                            album.orderedArtists.joinToString(
-                                "",
-                            ) { it.name }
+            SongSortType.ARTIST ->
+                songsByRowIdAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs
+                        .sortedWith(
+                            compareBy(collator) { song ->
+                                song.orderedArtists.joinToString("") { it.name }
+                            },
+                        ).groupBy { it.album?.title }
+                        .flatMap { (_, songsByAlbum) ->
+                            songsByAlbum.sortedBy { album ->
+                                album.orderedArtists.joinToString(
+                                    "",
+                                ) { it.name }
+                            }
                         }
-                    }
-            }
+                }
 
-        SongSortType.PLAY_TIME -> songsByPlayTimeAsc()
-    }.map { it.reversed(descending) }
+            SongSortType.PLAY_TIME -> songsByPlayTimeAsc()
+        }.map { it.reversed(descending) }
 
     @Transaction
     @Query("SELECT * FROM song WHERE liked ORDER BY rowId")
@@ -190,36 +192,37 @@ interface DatabaseDao {
     fun likedSongs(
         sortType: SongSortType,
         descending: Boolean,
-    ) = when (sortType) {
-        SongSortType.CREATE_DATE -> likedSongsByCreateDateAsc()
-        SongSortType.NAME ->
-            likedSongsByNameAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs.sortedWith(compareBy(collator) { it.song.title })
-            }
+    ): Flow<List<Song>> =
+        when (sortType) {
+            SongSortType.CREATE_DATE -> likedSongsByCreateDateAsc()
+            SongSortType.NAME ->
+                likedSongsByNameAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs.sortedWith(compareBy(collator) { it.song.title })
+                }
 
-        SongSortType.ARTIST ->
-            likedSongsByRowIdAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs
-                    .sortedWith(
-                        compareBy(collator) { song ->
-                            song.orderedArtists.joinToString("") { it.name }
-                        },
-                    ).groupBy { it.album?.title }
-                    .flatMap { (_, songsByAlbum) ->
-                        songsByAlbum.sortedBy { album ->
-                            album.orderedArtists.joinToString(
-                                "",
-                            ) { it.name }
+            SongSortType.ARTIST ->
+                likedSongsByRowIdAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs
+                        .sortedWith(
+                            compareBy(collator) { song ->
+                                song.orderedArtists.joinToString("") { it.name }
+                            },
+                        ).groupBy { it.album?.title }
+                        .flatMap { (_, songsByAlbum) ->
+                            songsByAlbum.sortedBy { album ->
+                                album.orderedArtists.joinToString(
+                                    "",
+                                ) { it.name }
+                            }
                         }
-                    }
-            }
+                }
 
-        SongSortType.PLAY_TIME -> likedSongsByPlayTimeAsc()
-    }.map { it.reversed(descending) }
+            SongSortType.PLAY_TIME -> likedSongsByPlayTimeAsc()
+        }.map { it.reversed(descending) }
 
     @Transaction
     @Query("SELECT COUNT(1) FROM song WHERE liked")
@@ -1283,36 +1286,37 @@ interface DatabaseDao {
     fun uploadedSongs(
         sortType: SongSortType,
         descending: Boolean,
-    ) = when (sortType) {
-        SongSortType.CREATE_DATE -> uploadedSongsByCreateDateAsc()
-        SongSortType.NAME ->
-            uploadedSongsByNameAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs.sortedWith(compareBy(collator) { it.song.title })
-            }
+    ): Flow<List<Song>> =
+        when (sortType) {
+            SongSortType.CREATE_DATE -> uploadedSongsByCreateDateAsc()
+            SongSortType.NAME ->
+                uploadedSongsByNameAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs.sortedWith(compareBy(collator) { it.song.title })
+                }
 
-        SongSortType.ARTIST ->
-            uploadedSongsByRowIdAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs
-                    .sortedWith(
-                        compareBy(collator) { song ->
-                            song.orderedArtists.joinToString("") { it.name }
-                        },
-                    ).groupBy { it.album?.title }
-                    .flatMap { (_, songsByAlbum) ->
-                        songsByAlbum.sortedBy { album ->
-                            album.orderedArtists.joinToString(
-                                "",
-                            ) { it.name }
+            SongSortType.ARTIST ->
+                uploadedSongsByRowIdAsc().map { songs ->
+                    val collator = Collator.getInstance(Locale.getDefault())
+                    collator.strength = Collator.PRIMARY
+                    songs
+                        .sortedWith(
+                            compareBy(collator) { song ->
+                                song.orderedArtists.joinToString("") { it.name }
+                            },
+                        ).groupBy { it.album?.title }
+                        .flatMap { (_, songsByAlbum) ->
+                            songsByAlbum.sortedBy { album ->
+                                album.orderedArtists.joinToString(
+                                    "",
+                                ) { it.name }
+                            }
                         }
-                    }
-            }
+                }
 
-        SongSortType.PLAY_TIME -> uploadedSongsByPlayTimeAsc()
-    }.map { it.reversed(descending) }
+            SongSortType.PLAY_TIME -> uploadedSongsByPlayTimeAsc()
+        }.map { it.reversed(descending) }
 
     @Transaction
     @Query("SELECT * FROM song WHERE isEpisode = 1 ORDER BY inLibrary")

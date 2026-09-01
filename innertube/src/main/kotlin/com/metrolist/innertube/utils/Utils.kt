@@ -12,7 +12,7 @@ suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching
     var continuation = page.songsContinuation
     val seenContinuations = mutableSetOf<String>()
     var requestCount = 0
-    val maxRequests = 50
+    val maxRequests = 250
     var consecutiveEmptyResponses = 0
     
     while (continuation != null && requestCount < maxRequests) {
@@ -37,7 +37,7 @@ suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching
     PlaylistPage(
         playlist = page.playlist,
         songs = songs,
-        songsContinuation = null,
+        songsContinuation = continuation,
         continuation = page.continuation
     )
 }
@@ -49,7 +49,7 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
     var continuation = page.continuation
     val seenContinuations = mutableSetOf<String>()
     var requestCount = 0
-    val maxRequests = 50
+    val maxRequests = 250
     var consecutiveEmptyResponses = 0
     
     while (continuation != null && requestCount < maxRequests) {
@@ -73,7 +73,7 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
     }
     LibraryPage(
         items = items,
-        continuation = null
+        continuation = continuation
     )
 }
 

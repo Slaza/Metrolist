@@ -732,16 +732,21 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteSongs = page.songs
                     val remoteIds = remoteSongs.map { it.id }.toSet()
-                    val localSongs = database.likedSongEntitiesByNameAsc()
 
-                    // Remove likes from songs not in remote
-                    localSongs.filterNot { it.id in remoteIds }.forEach { song ->
-                        try {
-                            database.update(song.localToggleLike())
-                            delay(DB_OPERATION_DELAY_MS)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to update song: ${song.id}")
+                    // Only remove likes if we have the COMPLETE remote list
+                    if (page.songsContinuation == null) {
+                        val localSongs = database.likedSongEntitiesByNameAsc()
+                        // Remove likes from songs not in remote
+                        localSongs.filterNot { it.id in remoteIds }.forEach { song ->
+                            try {
+                                database.update(song.localToggleLike())
+                                delay(DB_OPERATION_DELAY_MS)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to update song: ${song.id}")
+                            }
                         }
+                    } else {
+                        Timber.i("Liked songs sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     // Add/update songs from remote
@@ -798,15 +803,20 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteSongs = page.items.filterIsInstance<SongItem>().reversed()
                     val remoteIds = remoteSongs.map { it.id }.toSet()
-                    val localSongs = database.librarySongEntitiesByNameAsc()
 
-                    localSongs.filterNot { it.id in remoteIds }.forEach { song ->
-                        try {
-                            database.update(song.toggleLibrary(syncToYouTube = false))
-                            delay(DB_OPERATION_DELAY_MS)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to update song: ${song.id}")
+                    // Only remove from library if we have the COMPLETE remote list
+                    if (page.continuation == null) {
+                        val localSongs = database.librarySongEntitiesByNameAsc()
+                        localSongs.filterNot { it.id in remoteIds }.forEach { song ->
+                            try {
+                                database.update(song.toggleLibrary(syncToYouTube = false))
+                                delay(DB_OPERATION_DELAY_MS)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to update song: ${song.id}")
+                            }
                         }
+                    } else {
+                        Timber.i("Library songs sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     remoteSongs.forEach { song ->
@@ -857,16 +867,21 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteSongs = page.items.filterIsInstance<SongItem>().reversed()
                     val remoteIds = remoteSongs.map { it.id }.toSet()
-                    val localSongs = database.uploadedSongEntitiesByNameAsc()
 
-                    // Remove uploaded flag from songs no longer in remote
-                    localSongs.filterNot { it.id in remoteIds }.forEach { song ->
-                        try {
-                            database.update(song.toggleUploaded())
-                            delay(DB_OPERATION_DELAY_MS)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to update song: ${song.id}")
+                    // Only remove from uploads if we have the COMPLETE remote list
+                    if (page.continuation == null) {
+                        val localSongs = database.uploadedSongEntitiesByNameAsc()
+                        // Remove uploaded flag from songs no longer in remote
+                        localSongs.filterNot { it.id in remoteIds }.forEach { song ->
+                            try {
+                                database.update(song.toggleUploaded())
+                                delay(DB_OPERATION_DELAY_MS)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to update song: ${song.id}")
+                            }
                         }
+                    } else {
+                        Timber.i("Uploaded songs sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     // Sync remote songs to local database
@@ -920,9 +935,10 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteAlbums = page.items.filterIsInstance<AlbumItem>().reversed()
                     val remoteIds = remoteAlbums.map { it.id }.toSet()
-                    val localAlbums = database.likedAlbumEntitiesByNameAsc()
 
-                    if (remoteIds.isNotEmpty()) {
+                    // Only remove from liked albums if we have the COMPLETE remote list
+                    if (page.continuation == null && remoteIds.isNotEmpty()) {
+                        val localAlbums = database.likedAlbumEntitiesByNameAsc()
                         localAlbums.filterNot { it.id in remoteIds }.forEach { album ->
                             try {
                                 database.update(album.localToggleLike())
@@ -931,6 +947,8 @@ class SyncUtils @Inject constructor(
                                 Timber.e(e, "Failed to update album: ${album.id}")
                             }
                         }
+                    } else if (page.continuation != null) {
+                        Timber.i("Liked albums sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     remoteAlbums.forEach { album ->
@@ -983,15 +1001,20 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteAlbums = page.items.filterIsInstance<AlbumItem>().reversed()
                     val remoteIds = remoteAlbums.map { it.id }.toSet()
-                    val localAlbums = database.uploadedAlbumEntitiesByNameAsc()
 
-                    localAlbums.filterNot { it.id in remoteIds }.forEach { album ->
-                        try {
-                            database.update(album.toggleUploaded())
-                            delay(DB_OPERATION_DELAY_MS)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to update album: ${album.id}")
+                    // Only remove from uploaded albums if we have the COMPLETE remote list
+                    if (page.continuation == null) {
+                        val localAlbums = database.uploadedAlbumEntitiesByNameAsc()
+                        localAlbums.filterNot { it.id in remoteIds }.forEach { album ->
+                            try {
+                                database.update(album.toggleUploaded())
+                                delay(DB_OPERATION_DELAY_MS)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to update album: ${album.id}")
+                            }
                         }
+                    } else {
+                        Timber.i("Uploaded albums sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     remoteAlbums.forEach { album ->
@@ -1044,15 +1067,20 @@ class SyncUtils @Inject constructor(
                 try {
                     val remoteArtists = page.items.filterIsInstance<ArtistItem>()
                     val remoteIds = remoteArtists.map { it.id }.toSet()
-                    val localArtists = database.bookmarkedArtistEntitiesByNameAsc()
 
-                    localArtists.filterNot { it.id in remoteIds }.forEach { artist ->
-                        try {
-                            database.update(artist.localToggleLike())
-                            delay(DB_OPERATION_DELAY_MS)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to update artist: ${artist.id}")
+                    // Only remove from bookmarked artists if we have the COMPLETE remote list
+                    if (page.continuation == null) {
+                        val localArtists = database.bookmarkedArtistEntitiesByNameAsc()
+                        localArtists.filterNot { it.id in remoteIds }.forEach { artist ->
+                            try {
+                                database.update(artist.localToggleLike())
+                                delay(DB_OPERATION_DELAY_MS)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to update artist: ${artist.id}")
+                            }
                         }
+                    } else {
+                        Timber.i("Artist subscriptions sync: skipping removals because remote list is incomplete (limit reached)")
                     }
 
                     remoteArtists.forEach { artist ->
@@ -1418,16 +1446,22 @@ class SyncUtils @Inject constructor(
                     executeCleanupDuplicatePlaylists()
 
                     val localPlaylists = database.playlistEntitiesByNameAsc().toMutableList()
-                    localPlaylists.filterNot { it.browseId in remoteIds }
-                        .filterNot { it.browseId == null }
-                        .forEach { playlist ->
-                            try {
-                                database.update(playlist.localToggleLike())
-                                delay(DB_OPERATION_DELAY_MS)
-                            } catch (e: Exception) {
-                                Timber.e(e, "Failed to update playlist: ${playlist.id}")
+
+                    // Only remove from local if we have the COMPLETE remote list
+                    if (page.continuation == null) {
+                        localPlaylists.filterNot { it.browseId in remoteIds }
+                            .filterNot { it.browseId == null }
+                            .forEach { playlist ->
+                                try {
+                                    database.update(playlist.localToggleLike())
+                                    delay(DB_OPERATION_DELAY_MS)
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Failed to update playlist: ${playlist.id}")
+                                }
                             }
-                        }
+                    } else {
+                        Timber.i("Saved playlists sync: skipping removals because remote list is incomplete (limit reached)")
+                    }
 
                     for (playlist in remotePlaylists) {
                         try {
@@ -1531,6 +1565,12 @@ class SyncUtils @Inject constructor(
 
                     val remoteIds = songs.map { it.id }
                     val localIds = database.playlistSongIds(playlistId)
+
+                    // Only perform update if we have the COMPLETE remote list to avoid data loss
+                    if (page.songsContinuation != null) {
+                        Timber.w("syncPlaylist: Skipping full sync because remote list is incomplete (reached fetch limit)")
+                        return@onSuccess
+                    }
 
                     if (remoteIds == localIds) {
                         Timber.d("syncPlaylist: Local and remote are in sync, no changes needed")

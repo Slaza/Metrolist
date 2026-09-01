@@ -1,3 +1,25 @@
+---v12.6.3-c
+
+- Updated support for Android Auto.
+- Added support for displaying playlists in Android Auto.
+- Added additional options in the Settings > Android Auto to change what tabs are viewed.
+- Moved "Mixes" to a separate tab (experimental).
+- Added "New Releases" to Android Auto (fetched from the official YouTube Music New Releases page).
+- Added "Discover" to Android Auto (Note: Currently undergoing improvements).
+- Fixed an issue where the Queue button on Android Auto would break due to playlists exceeding 4,000 songs.
+- Improved library syncing to prevent songs from missing in large playlists.
+
+---v13.6.3-b
+
+- Fixed crashes and memory errors (OutOfMemoryError) when using Android Auto with large music libraries or long queues (e.g., Supermix).
+- Implemented pagination and limited the "Queue" view to the next 50 songs to prevent head unit freezes.
+- Optimized artwork loading for Android Auto to prevent heap exhaustion.
+- Fixed an issue where syncing liked songs would sometimes remove items from the library due to fetching limits. Increased library sync limit to 25,000 songs.
+- Added new "Discover" and "New Releases" sections to Android Auto.
+- Set "Show YouTube suggested playlists" to ON by default for Android Auto.
+- Set "Artists" and "Albums" to OFF by default for Android Auto (can be re-enabled in settings).
+- Simplified the "About" screen to focus on changelogs.
+
 ---v13.6.3
 
 This is a hotfix release to fix borked lyrics and media controller. We apologize for the inconvenience.  

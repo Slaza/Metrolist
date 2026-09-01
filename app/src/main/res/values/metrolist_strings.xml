@@ -238,7 +238,8 @@
     <string name="default_links">Open supported links</string>
     <string name="open_app_settings_error">Couldn\'t open the app settings</string>
 
-    <string name="release_notes">Release notes</string>
+    <string name="podcasts">Podcasts</string>
+    <string name="release_notes">Updated Android Auto support with new "Mixes", "New Releases", and "Discover" tabs. Added customizable tab visibility in Settings. Fixed queue issues for large playlists (&gt;4,000 songs) and improved library syncing reliability.</string>
     <string name="changelog">Changelog</string>
     <string name="changelog_empty">No changelogs available</string>
     <string name="github_releases_url">https://github.com/MetrolistGroup/Metrolist/releases</string>
@@ -966,6 +967,9 @@
     <string name="android_auto_search_options">Search options</string>
     <string name="android_auto_search_local_songs_limit">Songs search limit</string>
     <string name="android_auto_search_local_songs_limit_desc">Limit the number of local songs shown in the search results. It is recommended to not set unlimited to prevent memory crashes</string>
+
+    <string name="discover">Discover</string>
+    <string name="new_releases">New Releases</string>
 
     <!-- Stats time transfer -->
     <string name="time_transfer_title">Time transfer</string>
