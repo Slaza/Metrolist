@@ -41,6 +41,7 @@ import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Format
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
@@ -697,9 +698,18 @@ class MusicService :
             toggleLibrary = ::toggleLibrary
             addToTargetPlaylist = ::addToTargetPlaylist
         }
+        
+        val forwardingPlayer = object : ForwardingPlayer(player) {
+            override fun getDuration(): Long {
+                val dur = super.getDuration()
+                if (dur != C.TIME_UNSET && dur > 0) return dur
+                return currentMediaItem?.mediaMetadata?.extras?.getLong("android.media.metadata.METADATA_KEY_DURATION", C.TIME_UNSET) ?: C.TIME_UNSET
+            }
+        }
+
         mediaSession =
             MediaLibrarySession
-                .Builder(this, player, mediaLibrarySessionCallback)
+                .Builder(this, forwardingPlayer, mediaLibrarySessionCallback)
                 .setSessionActivity(
                     PendingIntent.getActivity(
                         this,
@@ -4977,8 +4987,12 @@ class MusicService :
         const val ALBUM = "album"
         const val PLAYLIST = "playlist"
         const val YOUTUBE_PLAYLIST = "youtube_playlist"
+        const val YOUTUBE_ALBUM = "youtube_album"
+        const val NEW_RELEASES = "new_releases"
+        const val MY_MIXES = "my_mixes"
         const val SEARCH = "search"
         const val SHUFFLE_ACTION = "__shuffle__"
+        const val REFRESH_ACTION = "__refresh__"
 
         const val CHANNEL_ID = "music_channel_01"
         const val NOTIFICATION_ID = 888

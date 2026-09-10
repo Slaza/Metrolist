@@ -66,6 +66,8 @@ enum class AndroidAutoSection(val id: String) {
     ARTISTS("artists"),
     ALBUMS("albums"),
     PLAYLISTS("playlists"),
+    NEW_RELEASES("new_releases"),
+    MY_MIXES("my_mixes"),
 }
 
 @Composable
@@ -75,20 +77,26 @@ fun AndroidAutoSection.label(): String = when (this) {
     AndroidAutoSection.ARTISTS -> stringResource(R.string.artists)
     AndroidAutoSection.ALBUMS -> stringResource(R.string.albums)
     AndroidAutoSection.PLAYLISTS -> stringResource(R.string.playlists)
+    AndroidAutoSection.NEW_RELEASES -> stringResource(R.string.new_releases)
+    AndroidAutoSection.MY_MIXES -> stringResource(R.string.my_mixes)
 }
 
 fun serializeSections(sections: List<Pair<AndroidAutoSection, Boolean>>): String =
     sections.joinToString(",") { (section, enabled) -> "${section.id}:$enabled" }
 
 fun deserializeSections(raw: String): List<Pair<AndroidAutoSection, Boolean>> {
-    if (raw.isBlank()) return AndroidAutoSection.values().map { it to true }
-    return raw.split(",").mapNotNull { token ->
+    val default = AndroidAutoSection.values().map { it to true }
+    if (raw.isBlank()) return default
+    val saved = raw.split(",").mapNotNull { token ->
         val parts = token.split(":")
         if (parts.size != 2) return@mapNotNull null
         val section = AndroidAutoSection.values().find { it.id == parts[0] } ?: return@mapNotNull null
         val enabled = parts[1].toBooleanStrictOrNull() ?: true
         section to enabled
     }
+    val savedIds = saved.map { it.first.id }.toSet()
+    val missing = default.filter { it.first.id !in savedIds }
+    return saved + missing
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,6 +196,8 @@ fun AndroidAutoSettings(
                                         AndroidAutoSection.ARTISTS -> R.drawable.artist
                                         AndroidAutoSection.ALBUMS -> R.drawable.album
                                         AndroidAutoSection.PLAYLISTS -> R.drawable.queue_music
+                                        AndroidAutoSection.NEW_RELEASES -> R.drawable.album
+                                        AndroidAutoSection.MY_MIXES -> R.drawable.explore_outlined
                                     }
                                 ),
                                 title = { Text(section.label()) },

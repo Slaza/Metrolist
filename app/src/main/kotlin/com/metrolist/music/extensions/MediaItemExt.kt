@@ -44,6 +44,11 @@ fun MediaMetadata.toMediaItem(): MediaItem {
                 .setIsPlayable(true)
                 .setExtras(Bundle().apply {
                     resolvedMetadata.thumbnailUrl?.let { putString("artwork_uri", it) }
+                    if (resolvedMetadata.duration > 0) {
+                        val durationMs = resolvedMetadata.duration.toLong() * 1000
+                        putLong("android.media.metadata.METADATA_KEY_DURATION", durationMs)
+                        putLong("duration_ms", durationMs)
+                    }
                 })
                 .build(),
         ).build()
@@ -73,6 +78,11 @@ fun MediaItem.withUpdatedMetadata(updatedMetadata: MediaMetadata): MediaItem {
                 .setAlbumArtist(resolvedMetadata.artists.firstOrNull()?.name)
                 .setExtras(Bundle().apply {
                     resolvedMetadata.thumbnailUrl?.let { putString("artwork_uri", it) }
+                    if (resolvedMetadata.duration > 0) {
+                        val durationMs = resolvedMetadata.duration.toLong() * 1000
+                        putLong("android.media.metadata.METADATA_KEY_DURATION", durationMs)
+                        putLong("duration_ms", durationMs)
+                    }
                 })
                 .build(),
         ).build()
