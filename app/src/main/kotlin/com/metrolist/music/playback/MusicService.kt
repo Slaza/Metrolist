@@ -143,6 +143,7 @@ import com.metrolist.music.constants.HistoryDuration
 import com.metrolist.music.constants.LastFMUseNowPlaying
 import com.metrolist.music.constants.MediaSessionConstants
 import com.metrolist.music.constants.MediaSessionConstants.CommandAddToTargetPlaylist
+import com.metrolist.music.constants.MediaSessionConstants.CommandDislikeAndSkip
 import com.metrolist.music.constants.MediaSessionConstants.CommandToggleLike
 import com.metrolist.music.constants.MediaSessionConstants.CommandToggleRepeatMode
 import com.metrolist.music.constants.MediaSessionConstants.CommandToggleShuffle
@@ -171,6 +172,7 @@ import com.metrolist.music.db.entities.Event
 import com.metrolist.music.db.entities.FormatEntity
 import com.metrolist.music.db.entities.LyricsEntity
 import com.metrolist.music.db.entities.PlaylistEntity
+import com.metrolist.music.db.entities.PlaylistSongMap
 import com.metrolist.music.db.entities.RelatedSongMap
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.di.DownloadCache
@@ -694,6 +696,7 @@ class MusicService :
         mediaLibrarySessionCallback.apply {
             service = this@MusicService
             toggleLike = ::toggleLike
+            dislikeAndSkip = ::dislikeAndSkipCurrentSong
             toggleStartRadio = ::toggleStartRadio
             toggleLibrary = ::toggleLibrary
             addToTargetPlaylist = ::addToTargetPlaylist
@@ -1573,22 +1576,36 @@ class MusicService :
     }
 
     private fun updateNotification(isLiked: Boolean? = currentSong.value?.song?.let { if (it.isEpisode) it.inLibrary != null else it.liked }) {
-        mediaSession?.setCustomLayout(
-            listOf(
+        val likeButtons = buildList {
+            add(
                 CommandButton
                     .Builder()
-                    .setDisplayName(
-                        getString(
-                            if (isLiked == true) {
-                                R.string.action_remove_like
-                            } else {
-                                R.string.action_like
-                            },
-                        ),
-                    ).setIconResId(if (isLiked == true) R.drawable.ic_heart else R.drawable.ic_heart_outline)
+                    .setDisplayName(getString(if (isLiked == true) R.string.action_remove_like else R.string.action_like))
+                    .setIconResId(
+                        when {
+                            isLiked == true -> R.drawable.ic_heart
+                            currentSong.value != null -> R.drawable.thumb_up
+                            else -> R.drawable.ic_heart_outline
+                        },
+                    )
                     .setSessionCommand(CommandToggleLike)
                     .setEnabled(currentSong.value != null)
                     .build(),
+            )
+            if (isLiked != true) {
+                add(
+                    CommandButton
+                        .Builder()
+                        .setDisplayName(getString(R.string.dislike))
+                        .setIconResId(R.drawable.thumb_down)
+                        .setSessionCommand(CommandDislikeAndSkip)
+                        .setEnabled(currentSong.value != null)
+                        .build(),
+                )
+            }
+        }
+        mediaSession?.setMediaButtonPreferences(
+            likeButtons + listOf(
                 CommandButton
                     .Builder()
                     .setDisplayName(
@@ -2191,6 +2208,51 @@ class MusicService :
                 currentMediaMetadata.value = player.currentMetadata
             }
         }
+    }
+
+    fun dislikeCurrentSong() {
+        val song = currentSong.value?.song ?: return
+        if (song.isEpisode) return
+
+        scope.launch {
+            val dislikedSong = if (song.liked) song.toggleLike(syncToYouTube = false) else song
+            database.withTransaction {
+                insert(song)
+                if (song.liked) update(dislikedSong)
+                insert(
+                    PlaylistEntity(
+                        id = PlaylistEntity.DISLIKED_PLAYLIST_ID,
+                        name = getString(R.string.disliked_songs),
+                        isLocal = true,
+                    ),
+                )
+                if (playlistDuplicates(PlaylistEntity.DISLIKED_PLAYLIST_ID, listOf(song.id)).isEmpty()) {
+                    insert(
+                        PlaylistSongMap(
+                            playlistId = PlaylistEntity.DISLIKED_PLAYLIST_ID,
+                            songId = song.id,
+                            position = nextPlaylistSongPosition(PlaylistEntity.DISLIKED_PLAYLIST_ID),
+                        ),
+                    )
+                }
+            }
+
+            if (song.liked) {
+                updateNotification(isLiked = false)
+                updateWidgetUI(player.isPlaying, isLiked = false)
+                currentMediaMetadata.value = player.currentMetadata
+            }
+            syncUtils.dislikeSong(dislikedSong)
+        }
+    }
+
+    fun dislikeAndSkipCurrentSong() {
+        dislikeCurrentSong()
+        player.seekToNext()
+        if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+            player.prepare()
+        }
+        player.playWhenReady = true
     }
 
     fun addToTargetPlaylist() {

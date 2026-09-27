@@ -9,7 +9,6 @@ import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.view.WindowManager
 import android.widget.Toast
@@ -55,6 +54,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -1124,7 +1124,7 @@ fun BottomSheetPlayer(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 if (useNewPlayerDesign) {
-                    val shareShape =
+                    val leadingActionShape =
                         RoundedCornerShape(
                             topStart = 50.dp,
                             bottomStart = 50.dp,
@@ -1146,52 +1146,22 @@ fun BottomSheetPlayer(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AnimatedContent(targetState = showInlineLyrics, label = "ShareButton") { showLyrics ->
-                            if (showLyrics) {
-                                FilledIconButton(
-                                    onClick = { isFullScreen = !isFullScreen },
-                                    shape = shareShape,
-                                    colors =
-                                        IconButtonDefaults.filledIconButtonColors(
-                                            containerColor = textButtonColor,
-                                            contentColor = iconButtonColor,
-                                        ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.fullscreen),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
-                            } else {
-                                FilledIconButton(
-                                    onClick = {
-                                        val intent =
-                                            Intent().apply {
-                                                action = Intent.ACTION_SEND
-                                                type = "text/plain"
-                                                putExtra(
-                                                    Intent.EXTRA_TEXT,
-                                                    "https://music.youtube.com/watch?v=${mediaMetadata.id}",
-                                                )
-                                            }
-                                        context.startActivity(Intent.createChooser(intent, null))
-                                    },
-                                    shape = shareShape,
-                                    colors =
-                                        IconButtonDefaults.filledIconButtonColors(
-                                            containerColor = textButtonColor,
-                                            contentColor = iconButtonColor,
-                                        ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.share),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
+                        if (showInlineLyrics) {
+                            FilledIconButton(
+                                onClick = { isFullScreen = !isFullScreen },
+                                shape = CircleShape,
+                                colors =
+                                    IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = textButtonColor,
+                                        contentColor = iconButtonColor,
+                                    ),
+                                modifier = Modifier.size(42.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.fullscreen),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                )
                             }
                         }
 
@@ -1234,87 +1204,72 @@ fun BottomSheetPlayer(
                                 // For episodes, show saved state (inLibrary); for songs, show liked state
                                 val isEpisode = currentSong?.song?.isEpisode == true
                                 val isFavorite = if (isEpisode) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
-                                FilledIconButton(
-                                    onClick = playerConnection::toggleLike,
-                                    shape = favShape,
-                                    colors =
-                                        IconButtonDefaults.filledIconButtonColors(
-                                            containerColor = textButtonColor,
-                                            contentColor = iconButtonColor,
-                                        ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter =
-                                            painterResource(
-                                                if (isFavorite) {
-                                                    R.drawable.favorite
-                                                } else {
-                                                    R.drawable.favorite_border
+                                val favoriteColors =
+                                    IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = textButtonColor,
+                                        contentColor = iconButtonColor,
+                                    )
+                                val thumbColors =
+                                    IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = iconButtonColor,
+                                        contentColor = TextBackgroundColor,
+                                    )
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    FilledIconButton(
+                                        onClick = playerConnection::toggleLike,
+                                        shape = if (isFavorite) CircleShape else leadingActionShape,
+                                        colors = if (!isEpisode && !isFavorite) thumbColors else favoriteColors,
+                                        modifier = Modifier.size(42.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(
+                                                when {
+                                                    isFavorite -> R.drawable.favorite
+                                                    isEpisode -> R.drawable.favorite_border
+                                                    else -> R.drawable.thumb_up
                                                 },
                                             ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                    )
+                                            contentDescription = stringResource(R.string.like),
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                    if (!isEpisode && !isFavorite) {
+                                        FilledIconButton(
+                                            onClick = playerConnection::dislikeAndSkip,
+                                            enabled = !isListenTogetherGuest,
+                                            shape = favShape,
+                                            colors = thumbColors,
+                                            modifier = Modifier.size(42.dp),
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.thumb_down),
+                                                contentDescription = stringResource(R.string.dislike),
+                                                modifier = Modifier.size(24.dp),
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 } else {
-                    AnimatedContent(targetState = showInlineLyrics, label = "ShareButton") { showLyrics ->
-                        if (showLyrics) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(40.dp)
-                                        .clip(RoundedCornerShape(24.dp))
-                                        .background(textButtonColor)
-                                        .clickable { isFullScreen = !isFullScreen },
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.fullscreen),
-                                    contentDescription = null,
-                                    tint = iconButtonColor,
-                                    modifier =
-                                        Modifier
-                                            .align(Alignment.Center)
-                                            .size(24.dp),
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(40.dp)
-                                        .clip(RoundedCornerShape(24.dp))
-                                        .background(textButtonColor)
-                                        .clickable {
-                                            val intent =
-                                                Intent().apply {
-                                                    action = Intent.ACTION_SEND
-                                                    type = "text/plain"
-                                                    putExtra(
-                                                        Intent.EXTRA_TEXT,
-                                                        "https://music.youtube.com/watch?v=${mediaMetadata.id}",
-                                                    )
-                                                }
-                                            context.startActivity(Intent.createChooser(intent, null))
-                                        },
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.share),
-                                    contentDescription = null,
-                                    tint = iconButtonColor,
-                                    modifier =
-                                        Modifier
-                                            .align(Alignment.Center)
-                                            .size(24.dp),
-                                )
-                            }
+                    if (showInlineLyrics) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(textButtonColor)
+                                    .clickable { isFullScreen = !isFullScreen },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.fullscreen),
+                                contentDescription = null,
+                                tint = iconButtonColor,
+                                modifier = Modifier.align(Alignment.Center).size(24.dp),
+                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.size(12.dp))
 
                     AnimatedContent(targetState = showInlineLyrics, label = "LikeButton") { showLyrics ->
                         if (showLyrics) {
@@ -1818,16 +1773,30 @@ fun BottomSheetPlayer(
                                 // For episodes, show saved state (inLibrary); for songs, show liked state
                                 val isEpisode = currentSong?.song?.isEpisode == true
                                 val isFavorite = if (isEpisode) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
-                                ResizableIconButton(
-                                    icon = if (isFavorite) R.drawable.favorite else R.drawable.favorite_border,
-                                    color = if (isFavorite) MaterialTheme.colorScheme.error else TextBackgroundColor,
-                                    modifier =
-                                        Modifier
-                                            .size(32.dp)
-                                            .padding(4.dp)
-                                            .align(Alignment.Center),
-                                    onClick = playerConnection::toggleLike,
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.align(Alignment.Center),
+                                ) {
+                                    ResizableIconButton(
+                                        icon = when {
+                                            isFavorite -> R.drawable.favorite
+                                            isEpisode -> R.drawable.favorite_border
+                                            else -> R.drawable.thumb_up
+                                        },
+                                        color = if (isFavorite) MaterialTheme.colorScheme.error else TextBackgroundColor,
+                                        modifier = Modifier.size(32.dp).padding(4.dp),
+                                        onClick = playerConnection::toggleLike,
+                                    )
+                                    if (!isEpisode && !isFavorite) {
+                                        ResizableIconButton(
+                                            icon = R.drawable.thumb_down,
+                                            color = TextBackgroundColor,
+                                            enabled = !isListenTogetherGuest,
+                                            modifier = Modifier.size(32.dp).padding(4.dp),
+                                            onClick = playerConnection::dislikeAndSkip,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

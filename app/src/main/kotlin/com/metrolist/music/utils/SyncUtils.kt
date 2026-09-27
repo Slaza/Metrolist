@@ -68,6 +68,7 @@ sealed class SyncOperation {
     data object AutoSyncPlaylists : SyncOperation()
     data class SinglePlaylist(val browseId: String, val playlistId: String) : SyncOperation()
     data class LikeSong(val song: SongEntity) : SyncOperation()
+    data class DislikeSong(val song: SongEntity) : SyncOperation()
     data class SubscribeChannel(val channelId: String, val subscribe: Boolean) : SyncOperation()
     data class SavePodcast(val podcastId: String, val save: Boolean) : SyncOperation()
     data class SaveEpisode(val episodeId: String, val save: Boolean, val setVideoId: String?) : SyncOperation()
@@ -229,6 +230,7 @@ class SyncUtils @Inject constructor(
         is SyncOperation.SinglePlaylist -> "playlist:$browseId"
         SyncOperation.ClearPodcastData -> "clearPodcastData"
         is SyncOperation.LikeSong,
+        is SyncOperation.DislikeSong,
         is SyncOperation.SubscribeChannel,
         is SyncOperation.SavePodcast,
         is SyncOperation.SaveEpisode,
@@ -266,6 +268,7 @@ class SyncUtils @Inject constructor(
             is SyncOperation.AutoSyncPlaylists -> executeSyncAutoSyncPlaylists()
             is SyncOperation.SinglePlaylist -> executeSyncPlaylist(operation.browseId, operation.playlistId)
             is SyncOperation.LikeSong -> executeLikeSong(operation.song)
+            is SyncOperation.DislikeSong -> executeDislikeSong(operation.song)
             is SyncOperation.SubscribeChannel -> executeSubscribeChannel(operation.channelId, operation.subscribe)
             is SyncOperation.SavePodcast -> executeSavePodcast(operation.podcastId, operation.save)
             is SyncOperation.SaveEpisode -> executeSaveEpisode(operation.episodeId, operation.save, operation.setVideoId)
@@ -354,6 +357,10 @@ class SyncUtils @Inject constructor(
 
     fun likeSong(s: SongEntity) {
         enqueue(SyncOperation.LikeSong(s))
+    }
+
+    fun dislikeSong(s: SongEntity) {
+        enqueue(SyncOperation.DislikeSong(s))
     }
 
     fun subscribeChannel(channelId: String, subscribe: Boolean) {
@@ -595,6 +602,32 @@ class SyncUtils @Inject constructor(
                     artist = dbSong?.artists?.joinToString { a -> a.name } ?: "",
                     track = s.title,
                     love = s.liked
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update LastFM love status")
+            }
+        }
+    }
+
+    private suspend fun executeDislikeSong(s: SongEntity) = withContext(Dispatchers.IO) {
+        if (!isLoggedIn()) {
+            Timber.w("Skipping dislikeSong - user not logged in")
+            return@withContext
+        }
+
+        withRetry {
+            YouTube.dislikeVideo(s.id)
+        }.onFailure { e ->
+            Timber.e(e, "Failed to dislike song on YouTube: ${s.id}")
+        }
+
+        if (lastfmSendLikes) {
+            try {
+                val dbSong = database.song(s.id).firstOrNull()
+                LastFM.setLoveStatus(
+                    artist = dbSong?.artists?.joinToString { a -> a.name } ?: "",
+                    track = s.title,
+                    love = false,
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update LastFM love status")

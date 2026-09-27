@@ -6,6 +6,7 @@
 package com.metrolist.music.ui.player
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -178,6 +179,15 @@ fun Queue(
 
     val currentWindowIndex by playerConnection.currentWindowIndex.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val shareCurrentSong: () -> Unit = {
+        mediaMetadata?.id?.let { id ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=$id")
+            }
+            context.startActivity(Intent.createChooser(intent, null))
+        }
+    }
 
     val currentFormat by playerConnection.currentFormat.collectAsStateWithLifecycle(initialValue = null)
 
@@ -271,15 +281,15 @@ fun Queue(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 30.dp, vertical = 12.dp)
+                            .padding(horizontal = 12.dp, vertical = 12.dp)
                             .windowInsetsPadding(
                                 WindowInsets.systemBars.only(
                                     WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
                                 ),
                             ),
                 ) {
-                    val buttonSize = 42.dp
-                    val iconSize = 24.dp
+                    val buttonSize = 36.dp
+                    val iconSize = 20.dp
                     val queueShape =
                         RoundedCornerShape(
                             topStart = 50.dp,
@@ -351,6 +361,19 @@ fun Queue(
                         icon = R.drawable.lyrics,
                         onClick = { onToggleLyrics() },
                         isActive = showInlineLyrics,
+                        shape = middleShape,
+                        modifier = Modifier.size(buttonSize),
+                        textButtonColor = textButtonColor,
+                        iconButtonColor = iconButtonColor,
+                        iconSize = iconSize,
+                        textBackgroundColor = TextBackgroundColor,
+                        playerBackground = playerBackground,
+                    )
+
+                    PlayerQueueButton(
+                        icon = R.drawable.share,
+                        onClick = shareCurrentSong,
+                        isActive = false,
                         shape = middleShape,
                         modifier = Modifier.size(buttonSize),
                         textButtonColor = textButtonColor,
@@ -536,6 +559,34 @@ fun Queue(
                             )
                         }
                     }
+
+                    TextButton(
+                        onClick = shareCurrentSong,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.share),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = TextBackgroundColor,
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.share),
+                                color = TextBackgroundColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.basicMarquee(),
+                            )
+                        }
+                    }
+
                 }
             }
 

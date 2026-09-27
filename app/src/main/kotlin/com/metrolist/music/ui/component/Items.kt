@@ -939,6 +939,7 @@ fun PlaylistListItem(
             placeHolder = {
                 val painter = when (playlist.playlist.name) {
                     stringResource(R.string.liked) -> R.drawable.favorite_border
+                    stringResource(R.string.disliked_songs) -> R.drawable.thumb_down
                     stringResource(R.string.offline) -> R.drawable.offline
                     stringResource(R.string.cached_playlist) -> R.drawable.cached
                     // R.drawable.backup as placeholder
@@ -1039,6 +1040,7 @@ fun PlaylistGridItem(
             placeHolder = {
                 val painter = when (playlist.playlist.name) {
                     stringResource(R.string.liked) -> R.drawable.favorite_border
+                    stringResource(R.string.disliked_songs) -> R.drawable.thumb_down
                     stringResource(R.string.offline) -> R.drawable.offline
                     stringResource(R.string.cached_playlist) -> R.drawable.cached
                     // R.drawable.backup as placeholder

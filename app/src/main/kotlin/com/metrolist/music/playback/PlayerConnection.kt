@@ -325,6 +325,15 @@ class PlayerConnection(
         }
     }
 
+    fun dislikeAndSkip() {
+        try {
+            service.dislikeCurrentSong()
+            seekToNext()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error in dislikeAndSkip")
+        }
+    }
+
     fun toggleMute() {
         service.toggleMute()
     }

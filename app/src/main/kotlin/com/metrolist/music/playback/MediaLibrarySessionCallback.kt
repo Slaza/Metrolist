@@ -88,6 +88,7 @@ constructor(
     private var lastParentId: String? = null
     lateinit var service: MusicService
     var toggleLike: () -> Unit = {}
+    var dislikeAndSkip: () -> Unit = {}
     var toggleStartRadio: () -> Unit = {}
     var toggleLibrary: () -> Unit = {}
     var addToTargetPlaylist: () -> Unit = {}
@@ -105,6 +106,7 @@ constructor(
             connectionResult.availableSessionCommands
                 .buildUpon()
                 .add(MediaSessionConstants.CommandToggleLike)
+                .add(MediaSessionConstants.CommandDislikeAndSkip)
                 .add(MediaSessionConstants.CommandToggleStartRadio)
                 .add(MediaSessionConstants.CommandToggleLibrary)
                 .add(MediaSessionConstants.CommandToggleShuffle)
@@ -123,6 +125,7 @@ constructor(
     ): ListenableFuture<SessionResult> {
         when (customCommand.customAction) {
             MediaSessionConstants.ACTION_TOGGLE_LIKE -> toggleLike()
+            MediaSessionConstants.ACTION_DISLIKE_AND_SKIP -> dislikeAndSkip()
             MediaSessionConstants.ACTION_TOGGLE_START_RADIO -> toggleStartRadio()
             MediaSessionConstants.ACTION_TOGGLE_LIBRARY -> toggleLibrary()
             MediaSessionConstants.ACTION_TOGGLE_SHUFFLE -> session.player.shuffleModeEnabled =

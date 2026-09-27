@@ -133,9 +133,9 @@ fun LibraryPlaylistsScreen(
     val normalizedQuery = remember(searchQuery) { searchQuery.normalizeForSearch() }
     val filteredPlaylists = remember(playlists, normalizedQuery) {
         if (normalizedQuery.isBlank()) {
-            playlists
+            playlists.filterNot { it.id == PlaylistEntity.DISLIKED_PLAYLIST_ID }
         } else {
-            playlists.filter { playlist ->
+            playlists.filterNot { it.id == PlaylistEntity.DISLIKED_PLAYLIST_ID }.filter { playlist ->
                 matchesNormalizedQuery(normalizedQuery, playlist.playlist.name)
             }
         }
@@ -148,6 +148,16 @@ fun LibraryPlaylistsScreen(
             playlist = PlaylistEntity(
                 id = UUID.randomUUID().toString(),
                 name = stringResource(R.string.liked)
+            ),
+            songCount = 0,
+            songThumbnails = emptyList(),
+        )
+
+    val dislikedPlaylist =
+        Playlist(
+            playlist = PlaylistEntity(
+                id = PlaylistEntity.DISLIKED_PLAYLIST_ID,
+                name = stringResource(R.string.disliked_songs),
             ),
             songCount = 0,
             songThumbnails = emptyList(),
@@ -200,6 +210,7 @@ fun LibraryPlaylistsScreen(
     val (showUploaded) = rememberPreference(ShowUploadedPlaylistKey, true)
     val (showCached) = rememberPreference(ShowCachedPlaylistKey, true)
     val showLikedPlaylist = showLiked && matchesNormalizedQuery(normalizedQuery, likedPlaylist.playlist.name)
+    val showDislikedPlaylist = matchesNormalizedQuery(normalizedQuery, dislikedPlaylist.playlist.name)
     val showDownloadedPlaylist =
         showDownloaded && matchesNormalizedQuery(normalizedQuery, downloadPlaylist.playlist.name)
     val showCachedPlaylists = showCached && matchesNormalizedQuery(normalizedQuery, cachedPlaylist.playlist.name)
@@ -210,6 +221,7 @@ fun LibraryPlaylistsScreen(
     val visibleResults = remember(
         filteredPlaylists,
         showLikedPlaylist,
+        showDislikedPlaylist,
         showDownloadedPlaylist,
         showCachedPlaylists,
         showTopPlaylists,
@@ -224,6 +236,16 @@ fun LibraryPlaylistsScreen(
                         playlist = likedPlaylist,
                         autoPlaylist = true,
                         route = "auto_playlist/liked",
+                    ),
+                )
+            }
+            if (showDislikedPlaylist) {
+                add(
+                    VisiblePlaylistItem(
+                        key = "dislikedPlaylist",
+                        playlist = dislikedPlaylist,
+                        autoPlaylist = true,
+                        route = "auto_playlist/disliked",
                     ),
                 )
             }

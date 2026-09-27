@@ -15,6 +15,7 @@ import com.metrolist.music.constants.SongSortDescendingKey
 import com.metrolist.music.constants.SongSortType
 import com.metrolist.music.constants.SongSortTypeKey
 import com.metrolist.music.db.MusicDatabase
+import com.metrolist.music.db.entities.PlaylistEntity
 import com.metrolist.music.extensions.filterExplicit
 import com.metrolist.music.extensions.filterVideoSongs
 import com.metrolist.music.extensions.toEnum
@@ -71,6 +72,9 @@ constructor(
 
                     "uploaded" -> database.uploadedSongs(sortType, descending)
                         .map { it.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
+
+                    "disliked" -> database.playlistSongs(PlaylistEntity.DISLIKED_PLAYLIST_ID)
+                        .map { songs -> songs.map { it.song }.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs) }
 
                     else -> kotlinx.coroutines.flow.flowOf(emptyList())
                 }
