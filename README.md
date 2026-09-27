@@ -38,22 +38,6 @@
 > [!WARNING]
 > **Regional Restriction** - If YouTube Music is unavailable in your region, this app will not work without a **VPN or proxy** connecting to a supported region.
 
----
-
-<div align="center">
-
-<h1><a id="screenshots"></a>Screenshots</h1>
-
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_1.png" alt="Home screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_2.png" alt="Artist screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_3.png" alt="Recognize music screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_4.png" alt="Listen together screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_5.png" alt="Player screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_6.png" alt="Player lyrics screen" width="30%" />
-
-</div>
-
----
 
 <div align="center">
 
@@ -230,12 +214,6 @@
 44XjSELSWcgJTZiCKzjpCQWyXhokrH9RqH3rpp35FkSKi57T25hniHWHQNhLeXyFn3DDYqufmfRB1iEtENerZpJc7xJCcqt
 ```
 
-#### Buy Me a Coffee
-
-<a href="https://www.buymeacoffee.com/mostafaalagamy">
-  <img src="assets/buymeacoffee.png" alt="Buy Me a Coffee" width="150" />
-</a>
-
 </div>
 
 ---
@@ -341,9 +319,6 @@ All trademarks, service marks, and intellectual property rights referenced in th
 <div align="center">
 
 <br/>
-
 **Made with ❤️ by [Mo Agamy](https://github.com/mostafaalagamy)**
-
-**This project stands with Palestine 🇵🇸**
 
 </div>
